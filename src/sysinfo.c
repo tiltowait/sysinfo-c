@@ -1,3 +1,10 @@
+/*
+ * sysinfo.c - FreeBSD system information display utility
+ *
+ * Displays memory, disk, ZFS ARC stats, network addresses, and uptime
+ * with a minimal ASCII BSD daemon mascot.
+ */
+
 #include "zfs.h"
 #include <arpa/inet.h>
 #include <ifaddrs.h>
@@ -18,7 +25,12 @@
 #define RED_BOLD "\033[1;31m"
 #define RESET "\033[0m"
 
-/* Beastie ASCII art */
+/*
+ * =====================================
+ * Beastie ASCII art print functionality
+ * =====================================
+ */
+
 // clang-format off
 static const char *beastie_lines[] = {
     "/\\,-'''''-,/\\",
@@ -54,6 +66,12 @@ static void beastie_print_line(BeastiePrinter *bp, const char *label,
          label, RESET, value);
 }
 
+/*
+ * ======================
+ * Helpers and formatters
+ * ======================
+ */
+
 /* Convert bytes to GB as a double */
 static double bytes_to_gb(uint64_t bytes) {
   return (double)bytes / 1024.0 / 1024.0 / 1024.0;
@@ -63,6 +81,25 @@ static double bytes_to_gb(uint64_t bytes) {
 static void format_gb(char *buf, size_t bufsize, uint64_t bytes) {
   snprintf(buf, bufsize, "%.1fG", bytes_to_gb(bytes));
 }
+
+/* Format duration as days, hours, minutes */
+static void format_duration(char *buf, size_t bufsize, time_t seconds) {
+  int days = seconds / 86400;
+  int hours = (seconds % 86400) / 3600;
+  int minutes = (seconds % 3600) / 60;
+
+  if (days > 0) {
+    snprintf(buf, bufsize, "%dd %dh %dm", days, hours, minutes);
+  } else {
+    snprintf(buf, bufsize, "%dh %dm", hours, minutes);
+  }
+}
+
+/*
+ * =============================
+ * sysctl wrappers and stats calculators
+ * =============================
+ */
 
 /* Get a uint64 sysctl value */
 static int sysctl_uint64(const char *name, uint64_t *value) {
@@ -91,19 +128,6 @@ static int sysctl_timeval(const char *name, struct timeval *tv) {
   return 0;
 }
 
-/* Format duration as days, hours, minutes */
-static void format_duration(char *buf, size_t bufsize, time_t seconds) {
-  int days = seconds / 86400;
-  int hours = (seconds % 86400) / 3600;
-  int minutes = (seconds % 3600) / 60;
-
-  if (days > 0) {
-    snprintf(buf, bufsize, "%dd %dh %dm", days, hours, minutes);
-  } else {
-    snprintf(buf, bufsize, "%dh %dm", hours, minutes);
-  }
-}
-
 /* Get uptime */
 static int get_uptime(char *buf, size_t bufsize) {
   struct timeval boottime;
@@ -111,6 +135,7 @@ static int get_uptime(char *buf, size_t bufsize) {
     return -1;
   }
 
+  /* No error check. If the clock is broken, the user has bigger problems. */
   time_t now = time(NULL);
   time_t uptime = now - boottime.tv_sec;
 
@@ -121,19 +146,28 @@ static int get_uptime(char *buf, size_t bufsize) {
 /* Get memory statistics */
 static int get_memory(char *buf, size_t bufsize) {
   uint32_t pagesize;
-  uint64_t physmem, arcsize, freebytes;
+  uint64_t physmem, arcsize, free_bytes;
   uint32_t free_pages;
 
+  /*
+   * Though it's extremely unlikely any of these sysctls will fail, we check
+   * them all anyway, for completeness, and because Go has ruined me.
+   */
   if (sysctl_uint32("hw.pagesize", &pagesize) == -1) {
     return -1;
   }
+  if (sysctl_uint64("hw.realmem", &physmem) == -1) {
+    return -1;
+  }
+  if (sysctl_uint64("kstat.zfs.misc.arcstats.size", &arcsize) == -1) {
+    return -1;
+  }
+  if (sysctl_uint32("vm.stats.vm.v_free_count", &free_pages) == -1) {
+    return -1;
+  }
 
-  sysctl_uint64("hw.realmem", &physmem);
-  sysctl_uint64("kstat.zfs.misc.arcstats.size", &arcsize);
-  sysctl_uint32("vm.stats.vm.v_free_count", &free_pages);
-
-  freebytes = (uint64_t)free_pages * pagesize;
-  uint64_t available = freebytes + arcsize;
+  free_bytes = (uint64_t)free_pages * pagesize;
+  uint64_t available = free_bytes + arcsize;
   uint64_t used = physmem - available;
 
   char used_str[32], avail_str[32];
@@ -154,9 +188,8 @@ static int get_disk_usage(char *buf, size_t bufsize) {
 
   uint64_t total_bytes;
 
-  /* Try to get ZFS pool size first */
+  /* It's FreeBSD, so we'll assume ZFS but fall back to UFS if that fails */
   if (get_zpool_size(&total_bytes) == -1) {
-    /* Fallback to UFS */
     total_bytes = (uint64_t)stat.f_blocks * stat.f_bsize;
   }
 
@@ -167,6 +200,10 @@ static int get_disk_usage(char *buf, size_t bufsize) {
   format_gb(used_str, sizeof(used_str), used_bytes);
   format_gb(total_str, sizeof(total_str), total_bytes);
 
+  /*
+   * Technically, this might divide by zero. But in such a case, the system is
+   * so catastrophically broken that SIGFPE is practically a feature.
+   */
   double used_pct = (double)used_bytes / (double)total_bytes * 100.0;
 
   snprintf(buf, bufsize, "%s / %s (%.1f%%)", used_str, total_str, used_pct);
@@ -180,15 +217,22 @@ static int get_arc(char *buf, size_t bufsize) {
   if (sysctl_uint64("kstat.zfs.misc.arcstats.mfu_size", &mfu_size) == -1) {
     return -1;
   }
-
-  sysctl_uint64("kstat.zfs.misc.arcstats.mru_size", &mru_size);
-  sysctl_uint64("kstat.zfs.misc.arcstats.size", &arc_size);
+  if (sysctl_uint64("kstat.zfs.misc.arcstats.mru_size", &mru_size) == -1) {
+    return -1;
+  }
+  if (sysctl_uint64("kstat.zfs.misc.arcstats.size", &arc_size) == -1) {
+    return -1;
+  }
 
   char mfu_str[32], mru_str[32], arc_str[32];
   format_gb(mfu_str, sizeof(mfu_str), mfu_size);
   format_gb(mru_str, sizeof(mru_str), mru_size);
   format_gb(arc_str, sizeof(arc_str), arc_size);
 
+  /*
+   * If ZFS is in use, ARC can't ever be 0. If sysctl gave us 0 anyway, the
+   * system is borked, and the user deserves SIGFPE.
+   */
   double cache_pct = (double)mfu_size / (double)arc_size * 100.0;
 
   snprintf(buf, bufsize, "%s Total, %s MFU, %s MRU (%.1f%%)", arc_str, mfu_str,
@@ -196,7 +240,7 @@ static int get_arc(char *buf, size_t bufsize) {
   return 0;
 }
 
-/* Structure to hold interface addresses */
+/* Holds interface address and IP type */
 typedef struct {
   char type[8];
   char addr[INET6_ADDRSTRLEN];
@@ -253,22 +297,19 @@ int main(void) {
 
   char buf[256];
 
-  /* Memory */
   if (get_memory(buf, sizeof(buf)) == 0) {
     beastie_print_line(&printer, "Memory", buf);
   }
 
-  /* Disk usage */
   if (get_disk_usage(buf, sizeof(buf)) == 0) {
     beastie_print_line(&printer, "Disk", buf);
   }
 
-  /* ZFS ARC */
   if (get_arc(buf, sizeof(buf)) == 0) {
     beastie_print_line(&printer, "ARC", buf);
   }
 
-  /* Network addresses */
+  /* Change the interface to match yours */
   InterfaceAddr addrs[10];
   int addr_count = get_interface_addrs("igb0", addrs, 10);
   if (addr_count > 0) {
@@ -277,12 +318,10 @@ int main(void) {
     }
   }
 
-  /* Uptime */
   if (get_uptime(buf, sizeof(buf)) == 0) {
     beastie_print_line(&printer, "Uptime", buf);
   }
 
-  /* Print any remaining lines */
   while (printer.index < BEASTIE_LINES) {
     beastie_print_line(&printer, "", "");
   }
