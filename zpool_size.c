@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <stdint.h>
 
 /*
  * =============================================================
@@ -25,12 +26,43 @@ typedef enum { B_FALSE, B_TRUE } boolean_t;
  */
 #include <libnvpair.h>
 #include <libzfs.h>
+#include "zpool_size.h"
 
 /*
  * =============================================================
- * MAIN PROGRAM
+ * PUBLIC API
  * =============================================================
  */
+
+/* Get ZFS pool size in bytes using libzfs */
+int get_zpool_size(const char *poolname, uint64_t *size) {
+  libzfs_handle_t *g_zfs;
+  zpool_handle_t *zhp;
+
+  if ((g_zfs = libzfs_init()) == NULL) {
+    return -1;
+  }
+
+  zhp = zpool_open(g_zfs, poolname);
+  if (zhp == NULL) {
+    libzfs_fini(g_zfs);
+    return -1;
+  }
+
+  *size = zpool_get_prop_int(zhp, ZPOOL_PROP_SIZE, NULL);
+
+  zpool_close(zhp);
+  libzfs_fini(g_zfs);
+  return 0;
+}
+
+/*
+ * =============================================================
+ * STANDALONE UTILITY (when compiled as main program)
+ * =============================================================
+ */
+
+#ifdef ZPOOL_SIZE_STANDALONE
 
 static int pool_callback(zpool_handle_t *zhp, void *data) {
   uint64_t size;
@@ -63,3 +95,5 @@ int main(int argc, char **argv) {
   libzfs_fini(g_zfs);
   return 0;
 }
+
+#endif /* ZPOOL_SIZE_STANDALONE */
