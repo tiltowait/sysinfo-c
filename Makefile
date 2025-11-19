@@ -1,4 +1,4 @@
-# Makefile for zpool_size and sysinfo
+# Makefile for sysinfo
 
 # Compiler and flags
 CC = cc
@@ -10,9 +10,12 @@ CFLAGS = -Wall -Wextra -I. \
 	-I/usr/include/cddl/contrib/opensolaris/head
 LDFLAGS = -lzfs -lnvpair
 
-# Target executables
-TARGET = zpool_size
-SYSINFO_TARGET = sysinfo
+# Target executable
+TARGET = sysinfo
+
+# Source files
+SRCS = sysinfo.c zpool_size.c
+OBJS = $(SRCS:.c=.o)
 
 # Header dependencies
 HEADERS = libshare.h sys/mnttab.h zpool_size.h
@@ -22,42 +25,28 @@ PREFIX ?= /usr/local
 BINDIR = $(PREFIX)/bin
 
 # Default target
-all: $(TARGET) $(SYSINFO_TARGET)
+all: $(TARGET)
 
-# Build zpool_size standalone executable
-$(TARGET): zpool_size_standalone.o
-	$(CC) zpool_size_standalone.o -o $(TARGET) $(LDFLAGS)
+# Build sysinfo executable
+$(TARGET): $(OBJS)
+	$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
 
-# Build sysinfo executable (links with zpool_size.o)
-$(SYSINFO_TARGET): sysinfo.o zpool_size.o
-	$(CC) sysinfo.o zpool_size.o -o $(SYSINFO_TARGET) $(LDFLAGS)
-
-# Compile zpool_size as standalone (with main function)
-zpool_size_standalone.o: zpool_size.c $(HEADERS)
-	$(CC) $(CFLAGS) -DZPOOL_SIZE_STANDALONE -c zpool_size.c -o zpool_size_standalone.o
-
-# Compile zpool_size as library (without main function)
-zpool_size.o: zpool_size.c $(HEADERS)
-	$(CC) $(CFLAGS) -c zpool_size.c -o zpool_size.o
-
-# Compile sysinfo
-sysinfo.o: sysinfo.c $(HEADERS)
-	$(CC) $(CFLAGS) -c sysinfo.c -o sysinfo.o
+# Compile object files
+%.o: %.c $(HEADERS)
+	$(CC) $(CFLAGS) -c $< -o $@
 
 # Install target
-install: $(TARGET) $(SYSINFO_TARGET)
+install: $(TARGET)
 	install -d $(BINDIR)
 	install -m 755 $(TARGET) $(BINDIR)
-	install -m 755 $(SYSINFO_TARGET) $(BINDIR)
 
 # Uninstall target
 uninstall:
 	rm -f $(BINDIR)/$(TARGET)
-	rm -f $(BINDIR)/$(SYSINFO_TARGET)
 
 # Clean build artifacts
 clean:
-	rm -f *.o $(TARGET) $(SYSINFO_TARGET)
+	rm -f $(OBJS) $(TARGET)
 
 # Rebuild everything
 rebuild: clean all
