@@ -145,8 +145,6 @@ static int get_memory(char *buf, size_t bufsize) {
   return 0;
 }
 
-/* get_zpool_size() is now provided by zpool_size.c */
-
 /* Get disk usage */
 static int get_disk_usage(char *buf, size_t bufsize) {
   struct statfs stat;
@@ -282,6 +280,11 @@ int main(void) {
   /* Uptime */
   if (get_uptime(buf, sizeof(buf)) == 0) {
     beastie_print_line(&printer, "Uptime", buf);
+  }
+
+  /* Print any remaining lines */
+  while (printer.index < BEASTIE_LINES) {
+    beastie_print_line(&printer, "", "");
   }
 
   return 0;
