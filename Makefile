@@ -1,6 +1,5 @@
 # Makefile for sysinfo
 
-# Compiler and flags
 CC = cc
 CFLAGS = -Wall -Wextra -I. \
 	-I/usr/src/sys/contrib/openzfs/include \
@@ -9,47 +8,24 @@ CFLAGS = -Wall -Wextra -I. \
 	-I/usr/include/cddl/contrib/opensolaris/lib/libzfs/common \
 	-I/usr/include/cddl/contrib/opensolaris/head
 LDFLAGS = -lzfs -lnvpair
-
-# Target executable
-TARGET = sysinfo
-
-# Source files
-SRCS = sysinfo.c zpool_size.c
-OBJS = $(SRCS:.c=.o)
-
-# Header dependencies
-HEADERS = libshare.h sys/mnttab.h zpool_size.h
-
-# Installation paths
 PREFIX ?= /usr/local
-BINDIR = $(PREFIX)/bin
 
-# Default target
-all: $(TARGET)
+all: sysinfo
 
-# Build sysinfo executable
-$(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
+sysinfo: sysinfo.o zpool_size.o
+	$(CC) sysinfo.o zpool_size.o -o sysinfo $(LDFLAGS)
 
-# Compile object files
-%.o: %.c $(HEADERS)
-	$(CC) $(CFLAGS) -c $< -o $@
+sysinfo.o: sysinfo.c zpool_size.h
+	$(CC) $(CFLAGS) -c sysinfo.c
 
-# Install target
-install: $(TARGET)
-	install -d $(BINDIR)
-	install -m 755 $(TARGET) $(BINDIR)
+zpool_size.o: zpool_size.c zpool_size.h libshare.h sys/mnttab.h
+	$(CC) $(CFLAGS) -c zpool_size.c
 
-# Uninstall target
-uninstall:
-	rm -f $(BINDIR)/$(TARGET)
-
-# Clean build artifacts
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f sysinfo.o zpool_size.o sysinfo
 
-# Rebuild everything
-rebuild: clean all
+install: sysinfo
+	install -d $(PREFIX)/bin
+	install -m 755 sysinfo $(PREFIX)/bin
 
-# Phony targets
-.PHONY: all clean install uninstall rebuild
+.PHONY: all clean install
