@@ -35,7 +35,7 @@ typedef enum { B_FALSE, B_TRUE } boolean_t;
  */
 
 /* Get ZFS pool size in bytes using libzfs */
-int get_zpool_size(const char *poolname, uint64_t *size) {
+int get_zpool_size(uint64_t *size) {
   libzfs_handle_t *g_zfs;
   zpool_handle_t *zhp;
 
@@ -43,7 +43,7 @@ int get_zpool_size(const char *poolname, uint64_t *size) {
     return -1;
   }
 
-  zhp = zpool_open(g_zfs, poolname);
+  zhp = zpool_open(g_zfs, "zroot");
   if (zhp == NULL) {
     libzfs_fini(g_zfs);
     return -1;

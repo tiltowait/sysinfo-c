@@ -149,16 +149,16 @@ static int get_memory(char *buf, size_t bufsize) {
 /* get_zpool_size() is now provided by zpool_size.c */
 
 /* Get disk usage */
-static int get_disk_usage(const char *path, char *buf, size_t bufsize) {
+static int get_disk_usage(char *buf, size_t bufsize) {
     struct statfs stat;
-    if (statfs(path, &stat) == -1) {
+    if (statfs("/", &stat) == -1) {
         return -1;
     }
 
     uint64_t total_bytes;
 
     /* Try to get ZFS pool size first */
-    if (get_zpool_size("zroot", &total_bytes) == -1) {
+    if (get_zpool_size(&total_bytes) == -1) {
         /* Fallback to UFS */
         total_bytes = (uint64_t)stat.f_blocks * stat.f_bsize;
     }
@@ -261,7 +261,7 @@ int main(void) {
     }
 
     /* Disk usage */
-    if (get_disk_usage("/", buf, sizeof(buf)) == 0) {
+    if (get_disk_usage(buf, sizeof(buf)) == 0) {
         beastie_print_line(&printer, "Disk", buf);
     }
 
