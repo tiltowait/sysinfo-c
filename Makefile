@@ -1,7 +1,7 @@
 # Makefile for sysinfo
 
 CC = cc
-CFLAGS = -Wall -Wextra -O2 -I. \
+CFLAGS = -Wall -Wextra -O2 -Isrc \
 	-I/usr/src/sys/contrib/openzfs/include \
 	-I/usr/include/cddl/lib/libzfs \
 	-I/usr/include/cddl/compat/opensolaris \
@@ -12,8 +12,8 @@ PREFIX ?= /usr/local
 
 all: sysinfo
 
-sysinfo: sysinfo.c zpool_size.c zpool_size.h libshare.h sys/mnttab.h
-	$(CC) $(CFLAGS) sysinfo.c zpool_size.c -o sysinfo $(LDFLAGS)
+sysinfo: src/sysinfo.c src/zpool_size.c src/zpool_size.h src/libshare.h src/sys/mnttab.h
+	$(CC) $(CFLAGS) src/sysinfo.c src/zpool_size.c -o sysinfo $(LDFLAGS)
 
 clean:
 	rm -f sysinfo
