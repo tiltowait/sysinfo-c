@@ -1,5 +1,5 @@
-#ifndef ZPOOL_SIZE_H
-#define ZPOOL_SIZE_H
+#ifndef ZFS_H
+#define ZFS_H
 
 #include <stdint.h>
 
@@ -15,4 +15,4 @@
  */
 int get_zpool_size(uint64_t *size);
 
-#endif /* ZPOOL_SIZE_H */
+#endif /* ZFS_H */

@@ -12,8 +12,8 @@ PREFIX ?= /usr/local
 
 all: sysinfo
 
-sysinfo: src/sysinfo.c src/zpool_size.c src/zpool_size.h src/libshare.h src/sys/mnttab.h
-	$(CC) $(CFLAGS) src/sysinfo.c src/zpool_size.c -o sysinfo $(LDFLAGS)
+sysinfo: src/sysinfo.c src/zfs.c src/zfs.h src/libshare.h src/sys/mnttab.h
+	$(CC) $(CFLAGS) src/sysinfo.c src/zfs.c -o sysinfo $(LDFLAGS)
 
 clean:
 	rm -f sysinfo

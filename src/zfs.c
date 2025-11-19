@@ -1,7 +1,7 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <stdint.h>
 
 /*
  * =============================================================
@@ -20,19 +20,9 @@ typedef enum { B_FALSE, B_TRUE } boolean_t;
 #define _BOOLEAN_T_DECLARED
 #endif
 
-/*
- * Include ZFS libraries.
- * ensure -I. is used in compilation so it finds your local libshare.h
- */
+#include "zfs.h"
 #include <libnvpair.h>
 #include <libzfs.h>
-#include "zpool_size.h"
-
-/*
- * =============================================================
- * PUBLIC API
- * =============================================================
- */
 
 /* Get ZFS pool size in bytes using libzfs */
 int get_zpool_size(uint64_t *size) {
@@ -53,5 +43,6 @@ int get_zpool_size(uint64_t *size) {
 
   zpool_close(zhp);
   libzfs_fini(g_zfs);
+
   return 0;
 }
