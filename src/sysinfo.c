@@ -19,9 +19,16 @@
 #define RESET "\033[0m"
 
 /* Beastie ASCII art */
-static const char *beastie_lines[] = {"/\\,-'''''-,/\\", "\\_)       (_/",
-                                      "|           |",   "|           |",
-                                      " ;         ; ",   "  '-_____-' "};
+// clang-format off
+static const char *beastie_lines[] = {
+    "/\\,-'''''-,/\\",
+    "\\_)       (_/",
+    "|           |",
+    "|           |",
+    " ;         ; ",
+    "  '-_____-' "
+};
+// clang-format on
 #define BEASTIE_LINES 6
 
 /* BeastiePrinter structure */
