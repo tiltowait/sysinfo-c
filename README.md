@@ -21,13 +21,15 @@ As with the Go-based `sysinfo`, this project exists because [fastfetch's](https:
 ## Sample output
 
 ```
-/\,-'''''-,/\    Memory:    12.3G / 16G (3.7G Avail)
-\_)       (_/    Disk:      45.2G / 100.0G (45.2%)
-|           |    ARC:       8.5G Total, 4.2G MFU, 3.8G MRU (49.4%)
-|           |    IPv4:      [REDACTED]
- ;         ;     IPv6:      [REDACTED]
-  '-_____-'      Uptime:    5d 12h 34m
+/\,-'''''-,/\   Memory: 16.6G / 64G (47.4G Avail)
+\_)       (_/   Disk:   58.7G / 418.0G (14.1%)
+|           |   ARC:    41.3G Total, 33.4G MFU, 4.7G MRU (80.8%)
+|           |   IPv6:   [REDACTED]
+ ;         ;    IPv4:   [REDACTED]
+  '-_____-'     Uptime: 52d 12h 46m
 ```
+
+**Note:** Memory usage intentionally excludes the ARC. Because of this, `sysinfo` will show different memory usage than `top`. [Read this blog post for more details.](https://blog.tiltowait.dev/the-mystery-of-the-disappearing-disk-space/)
 
 ## Limitations
 
