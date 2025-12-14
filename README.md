@@ -10,7 +10,7 @@ A lightweight FreeBSD system information display utility that shows the followin
 
 ## Motivation
 
-This is a re-implementation of [my original sysinfo](https://github.com/tiltowait/sysinfo). While that version does the job, I became mildly obsessed with avoiding shelling out to the system's `zfs` commands. This version, written in C, uses the OpenZFS library and achieves a ~40% runtime reduction on a Xeon E3-1270v6.
+This is a re-implementation of [my original sysinfo](https://github.com/tiltowait/sysinfo). While that version does the job, I became mildly obsessed with avoiding shelling out to the system's `zfs` commands. This version, written in C, uses the OpenZFS library and is ~66% faster on a Xeon E3-1270v6.
 
 As with the Go-based `sysinfo`, this project exists because [fastfetch's](https://github.com/fastfetch-cli/fastfetch) calculations are off for FreeBSD. (See [the other readme](https://github.com/tiltowait/sysinfo) for more info)
 
