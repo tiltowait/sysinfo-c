@@ -11,15 +11,12 @@
 #include <netinet/in.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/mount.h>
 #include <sys/socket.h>
 #include <sys/sysctl.h>
 #include <sys/time.h>
-#include <sys/types.h>
 #include <time.h>
-#include <unistd.h>
 
 /* ANSI color codes */
 #define RED_BOLD "\033[1;31m"
