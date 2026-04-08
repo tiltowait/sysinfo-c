@@ -165,7 +165,7 @@ static int get_memory(char *buf, size_t bufsize) {
 
   free_bytes = (uint64_t)free_pages * pagesize;
   uint64_t available = free_bytes + arcsize;
-  uint64_t used = physmem - available;
+  uint64_t used = (available > physmem) ? 0 : physmem - available;
 
   char used_str[32], avail_str[32];
   format_gb(used_str, sizeof(used_str), used);
@@ -197,11 +197,9 @@ static int get_disk_usage(char *buf, size_t bufsize) {
   format_gb(used_str, sizeof(used_str), used_bytes);
   format_gb(total_str, sizeof(total_str), total_bytes);
 
-  /*
-   * Technically, this might divide by zero. But in such a case, the system is
-   * so catastrophically broken that SIGFPE is practically a feature.
-   */
-  double used_pct = (double)used_bytes / (double)total_bytes * 100.0;
+  double used_pct = (total_bytes > 0)
+                        ? (double)used_bytes / (double)total_bytes * 100.0
+                        : 0.0;
 
   snprintf(buf, bufsize, "%s / %s (%.1f%%)", used_str, total_str, used_pct);
   return 0;
@@ -226,11 +224,8 @@ static int get_arc(char *buf, size_t bufsize) {
   format_gb(mru_str, sizeof(mru_str), mru_size);
   format_gb(arc_str, sizeof(arc_str), arc_size);
 
-  /*
-   * If ZFS is in use, ARC can't ever be 0. If sysctl gave us 0 anyway, the
-   * system is borked, and the user deserves SIGFPE.
-   */
-  double cache_pct = (double)mfu_size / (double)arc_size * 100.0;
+  double cache_pct =
+      (arc_size > 0) ? (double)mfu_size / (double)arc_size * 100.0 : 0.0;
 
   snprintf(buf, bufsize, "%s Total, %s MFU, %s MRU (%.1f%%)", arc_str, mfu_str,
            mru_str, cache_pct);

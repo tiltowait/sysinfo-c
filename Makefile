@@ -1,7 +1,7 @@
 # Makefile for sysinfo
 
 CC = cc
-CFLAGS = -Wall -Wextra -O2 -Isrc \
+CFLAGS = -Wall -Wextra -O2 -D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wformat-security -Isrc \
 	-I/usr/src/sys/contrib/openzfs/include \
 	-I/usr/include/cddl/lib/libzfs \
 	-I/usr/include/cddl/compat/opensolaris \
